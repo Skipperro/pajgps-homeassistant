@@ -1,0 +1,11 @@
+{
+  "domain": "pajgps",
+  "name": "PAJ GPS Tracker",
+  "documentation": "https://github.com/Skipperro/pajgps-homeassistant",
+  "dependencies": [],
+  "codeowners": ["Skipperro"],
+  "requirements": [],
+  "iot_class": "cloud_polling",
+  "config_flow": true,
+  "version": "0.1.0"
+}

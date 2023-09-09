@@ -1,0 +1,34 @@
+{
+  "config": {
+    "error": {
+      "email_required": "Please enter your e-mail address.",
+      "password_required": "Please enter your password."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "email": "E-Mail",
+          "password": "Password"
+        },
+        "description": "Add credentials for PAJ GPS Tracker (finder-portal.com).",
+        "title": "Authorization"
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "email_required": "Please enter your e-mail address.",
+      "password_required": "Please enter your password."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "email": "E-Mail",
+          "password": "Password"
+        },
+        "description": "Add credentials for PAJ GPS Tracker (finder-portal.com).",
+        "title": "Authorization"
+      }
+    }
+  }
+}
