@@ -247,13 +247,15 @@ class PajGpsSensor(SensorEntity):
         # Refresh token
         self.token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
                                            self.hass.config_entries.async_entries(DOMAIN)[0].data["password"])
+        TOKEN = self.token
         LAST_TOKEN_REFRESH = datetime.now()
     async def async_update(self) -> None:
+        global TOKEN
         """Fetch new state data for the sensor."""
         # Get the GPS data from the API
         try:
             await self.refresh_token()
-            tracker_data = await get_device_data(self.token, self.gps_id)
+            tracker_data = await get_device_data(TOKEN, self.gps_id)
             if tracker_data != None:
                 if self._field == "lat":
                     self._attr_native_value = tracker_data.lat
