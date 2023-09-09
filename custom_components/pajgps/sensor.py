@@ -225,7 +225,7 @@ async def async_setup_entry(
 class PajGpsSensor(SensorEntity):
 
     def __init__(self, gps_id: str, field: str, icon:str, name: str, token: str, device_class: str, unit: str):
-        self.gps_id = gps_id
+        self._gps_id = gps_id
         self._field = field
         self._token = token
         self._unit = unit
@@ -243,7 +243,6 @@ class PajGpsSensor(SensorEntity):
         #    sw_version=VERSION,
         #)
 
-
     async def refresh_token(self):
         global TOKEN, LAST_TOKEN_REFRESH
         # If last token refresh happened in the last 10 minutes, don't refresh
@@ -260,7 +259,7 @@ class PajGpsSensor(SensorEntity):
         # Get the GPS data from the API
         try:
             await self.refresh_token()
-            tracker_data = await get_device_data(TOKEN, self.gps_id)
+            tracker_data = await get_device_data(TOKEN, self._gps_id)
             if tracker_data is not None:
                 if self._field == "lat":
                     self._attr_native_value = tracker_data.lat
@@ -269,7 +268,8 @@ class PajGpsSensor(SensorEntity):
                 self._attr_extra_state_attributes['battery'] = tracker_data.battery
             else:
                 self._attr_extra_state_attributes['data'] = None
-                self._attr_native_value = None
+                self._attr_native_value = 0.0
+                _LOGGER.warning(f"No data for device {self._gps_id}")
         except Exception as e:
             _LOGGER.error(f'{e}')
             self._attr_native_value = None
