@@ -216,7 +216,7 @@ async def async_setup_entry(
     # Add sensors
     to_add = []
     for device_id, device in devices.items():
-        to_add.append(PajGpsSensor(device_id, "lat", "mdi:map-marker", f"PAJ GPS {device_id} Latitude", token, "latitude", "°"))
+        to_add.append(PajGpsSensor(device_id, "lat", "mdi:map-marker", f"PAJ GPS {device_id} Latitude", token, None, "degrees"))
         #to_add.append(PajGpsSensor(device_id, "lng", "mdi:map-marker", f"{device['name']} Longitude", token, "longitude", "°"))
     async_add_entities(to_add, update_before_add=True)
 
@@ -262,11 +262,11 @@ class PajGpsSensor(SensorEntity):
             tracker_data = await get_device_data(TOKEN, self._gps_id)
             if tracker_data is not None:
                 if self._field == "lat":
-                    self._attr_native_value = tracker_data.lat
+                    self._attr_native_value = str(tracker_data.lat)
                     _LOGGER.error(f"Setting lat to {tracker_data.lat}")
                 elif self._field == "lng":
-                    self._attr_native_value = tracker_data.lng
-                    _LOGGER.error(f"Setting lat to {tracker_data.lat}")
+                    self._attr_native_value = str(tracker_data.lng)
+                    _LOGGER.error(f"Setting lng to {tracker_data.lng}")
                 self._attr_device_class = None
                 self._attr_native_unit_of_measurement = 'degrees'
                 self._attr_state_class = 'measurement'
