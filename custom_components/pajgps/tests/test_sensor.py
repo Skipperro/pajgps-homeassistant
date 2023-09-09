@@ -1,46 +1,55 @@
+import os
 import unittest
-import custom_components.ipify.sensor as sensor
+import custom_components.pajgps.sensor as sensor
+from dotenv import load_dotenv
 
-class IPSensorTest(unittest.IsolatedAsyncioTestCase):
+class PajGpsTrackerTest(unittest.IsolatedAsyncioTestCase):
+
+    email = None
+    password = None
+
     def setUp(self) -> None:
-        pass
+        # Get credentials from .env file in root directory
+        load_dotenv()
+        self.email = os.getenv('PAJGPS_EMAIL')
+        self.password = os.getenv('PAJGPS_PASSWORD')
 
-    def test_validate_ipv4(self):
-        assert sensor.validate_ipv4('192.168.0.1')
-        assert sensor.validate_ipv4('123.123.123.123')
-        assert not sensor.validate_ipv4('300.0.0.1')
-        assert not sensor.validate_ipv4('300.0.0.-1')
-        assert not sensor.validate_ipv4('2001:0db8:85a3:0000:0000:8a2e:0370:7334')
-        assert not sensor.validate_ipv4('1.2.3')
-        assert not sensor.validate_ipv4('1.2.3.4.5')
-        assert not sensor.validate_ipv4('abc.def.ghi.jkl')
-        assert not sensor.validate_ipv4('192.168.abc.def')
-        assert not sensor.validate_ipv4('')
 
-    def test_validate_ipv6(self):
-        assert sensor.validate_ipv6('2001:db8::2:1')
-        assert not sensor.validate_ipv6('2001::2:1')
-        assert sensor.validate_ipv6('2001:0db8:85a3:0000:0000:8a2e:0370:7334')
-        assert not sensor.validate_ipv6('2001:0db8:85a3:00000:0000:8a2e:0370:7334')
-        assert not sensor.validate_ipv6('2001:0db8:85a3:0000:0000:8a2e:0370:ghij')
-        assert not sensor.validate_ipv6('300.0.0.1')
-        assert not sensor.validate_ipv6('300.0.0.-1')
-        assert not sensor.validate_ipv6('192.168.0.1')
-        assert not sensor.validate_ipv6('1.2.3')
-        assert not sensor.validate_ipv6('1.2.3.4.5')
-        assert not sensor.validate_ipv6('')
+    async def test_login(self):
+        # Test if credentials are set
+        assert self.email != None
+        assert self.password != None
+        if self.email == None or self.password == None:
+            return
+        # Test login with valid credentials
+        token = await sensor.get_login_token(self.email, self.password)
+        assert token != None
+        # Test if login token is valid bearer header
+        if token != None:
+            assert len(token) > 20
 
-    async def test_update_ipv4(self):
-        await self.ipv4.async_update()
-        if self.ipv4.native_value == None:
-            return # skip tests if no ipv4 address is found (dev is offline?)
-        assert sensor.validate_ipv4(self.ipv4.native_value)
+    async def test_get_devices(self):
+        # Get Authoization token
+        token = await sensor.get_login_token(self.email, self.password)
+        assert token != None
+        if token == None:
+            return
+        # Test if get_devices returns a list of devices
+        devices = await sensor.get_devices(token)
+        assert devices != None
 
-    async def test_update_ipv6(self):
-        await self.ipv6.async_update()
-        if self.ipv6.native_value == None:
-            return # skip tests if no ipv6 address is found (dev is offline or uses only ipv4?)
-        assert len(self.ipv6.native_value) > 5
-        isv4 = sensor.validate_ipv4(self.ipv6.native_value)
-        if not isv4:
-            assert sensor.validate_ipv6(self.ipv6.native_value)
+    async def test_get_device_data(self):
+        # Get Authoization token
+        token = await sensor.get_login_token(self.email, self.password)
+        assert token != None
+        if token == None:
+            return
+        # Get devices
+        devices = await sensor.get_devices(token)
+        assert devices != None
+        if devices == None:
+            return
+        # Test if get_device_data returns a list of device data
+        for device in devices:
+            device_data = await sensor.get_device_data(token, device)
+            assert device_data != None
