@@ -198,6 +198,11 @@ async def async_setup_entry(
     async_add_entities,
 ):
     """Add sensors for passed config_entry in HA."""
+    # Check if email and password are set. Throw exception if not.
+    if config_entry.data["email"] == None or config_entry.data["password"] == None:
+        _LOGGER.error("Email or password not set")
+        return
+
     # Get Authoization token
     token = await get_login_token(config_entry.data["email"], config_entry.data["password"])
     if token == None:
@@ -245,9 +250,9 @@ class PajGpsSensor(SensorEntity):
         if LAST_TOKEN_REFRESH != None and (datetime.now() - LAST_TOKEN_REFRESH).seconds < 600:
             return
         # Refresh token
-        self.token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
+        self._token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
                                            self.hass.config_entries.async_entries(DOMAIN)[0].data["password"])
-        TOKEN = self.token
+        TOKEN = self._token
         LAST_TOKEN_REFRESH = datetime.now()
     async def async_update(self) -> None:
         global TOKEN
@@ -256,7 +261,7 @@ class PajGpsSensor(SensorEntity):
         try:
             await self.refresh_token()
             tracker_data = await get_device_data(TOKEN, self.gps_id)
-            if tracker_data != None:
+            if tracker_data is not None:
                 if self._field == "lat":
                     self._attr_native_value = tracker_data.lat
                 elif self._field == "lng":
