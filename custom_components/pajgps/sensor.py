@@ -211,7 +211,7 @@ async def async_setup_entry(
     # Add sensors
     to_add = []
     for device_id, device in devices.items():
-        to_add.append(PajGpsSensor(device_id, "lat", "mdi:map-marker", f"{device['name']} Latitude", token, "latitude", "°"))
+        to_add.append(PajGpsSensor(device_id, "lat", "mdi:map-marker", f"PAJ GPS {device_id} Latitude", token, "latitude", "°"))
         #to_add.append(PajGpsSensor(device_id, "lng", "mdi:map-marker", f"{device['name']} Longitude", token, "longitude", "°"))
     async_add_entities(to_add, update_before_add=True)
 
@@ -255,15 +255,11 @@ class PajGpsSensor(SensorEntity):
             await self.refresh_token()
             tracker_data = await get_device_data(self.token, self.gps_id)
             if tracker_data != None:
-                self._attr_extra_state_attributes['data'] = tracker_data
                 if self._field == "lat":
                     self._attr_native_value = tracker_data.lat
                 elif self._field == "lng":
                     self._attr_native_value = tracker_data.lng
-                self._attr_extra_state_attributes['direction'] = tracker_data.direction
                 self._attr_extra_state_attributes['battery'] = tracker_data.battery
-                self._attr_extra_state_attributes['speed'] = tracker_data.speed
-                self._attr_extra_state_attributes['iddevice'] = tracker_data.iddevice
             else:
                 self._attr_extra_state_attributes['data'] = None
                 self._attr_native_value = None
