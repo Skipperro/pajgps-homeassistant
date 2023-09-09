@@ -263,13 +263,19 @@ class PajGpsSensor(SensorEntity):
             if tracker_data is not None:
                 if self._field == "lat":
                     self._attr_native_value = tracker_data.lat
+                    _LOGGER.error(f"Setting lat to {tracker_data.lat}")
                 elif self._field == "lng":
                     self._attr_native_value = tracker_data.lng
+                    _LOGGER.error(f"Setting lat to {tracker_data.lat}")
+                self._attr_device_class = None
+                self._attr_native_unit_of_measurement = 'degrees'
+                self._attr_state_class = 'measurement'
                 self._attr_extra_state_attributes['battery'] = tracker_data.battery
             else:
                 self._attr_extra_state_attributes['data'] = None
                 self._attr_native_value = 0.0
-                _LOGGER.warning(f"No data for device {self._gps_id}")
+                _LOGGER.error(f"No data for device {self._gps_id}")
+
         except Exception as e:
             _LOGGER.error(f'{e}')
             self._attr_native_value = None
