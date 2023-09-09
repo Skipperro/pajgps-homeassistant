@@ -9,6 +9,9 @@ from homeassistant import config_entries
 from homeassistant.helpers.device_registry import DeviceEntryType
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_registry import async_get, async_entries_for_config_entry
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity, DataUpdateCoordinator, UpdateFailed,
+)
 from custom_components.pajgps.const import DOMAIN
 import aiohttp
 import logging
@@ -217,7 +220,7 @@ async def async_setup_entry(
     to_add = []
     for device_id, device in devices.items():
         to_add.append(PajGpsSensor(device_id, "lat", "mdi:map-marker", f"PAJ GPS {device_id} Latitude", token, None, "degrees"))
-        #to_add.append(PajGpsSensor(device_id, "lng", "mdi:map-marker", f"{device['name']} Longitude", token, "longitude", "°"))
+        to_add.append(PajGpsSensor(device_id, "lng", "mdi:map-marker", f"PAJ GPS {device_id} Longitude", token, None, "degrees"))
     async_add_entities(to_add, update_before_add=True)
 
 
@@ -262,11 +265,9 @@ class PajGpsSensor(SensorEntity):
             tracker_data = await get_device_data(TOKEN, self._gps_id)
             if tracker_data is not None:
                 if self._field == "lat":
-                    self._attr_native_value = str(tracker_data.lat)
-                    _LOGGER.error(f"Setting lat to {tracker_data.lat}")
+                    self._attr_native_value = tracker_data.lat
                 elif self._field == "lng":
-                    self._attr_native_value = str(tracker_data.lng)
-                    _LOGGER.error(f"Setting lng to {tracker_data.lng}")
+                    self._attr_native_value = tracker_data.lng
                 self._attr_device_class = None
                 self._attr_native_unit_of_measurement = 'degrees'
                 self._attr_state_class = 'measurement'
