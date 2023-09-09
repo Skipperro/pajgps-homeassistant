@@ -212,7 +212,7 @@ async def async_setup_entry(
     to_add = []
     for device_id, device in devices.items():
         to_add.append(PajGpsSensor(device_id, "lat", "mdi:map-marker", f"{device['name']} Latitude", token, "latitude", "°"))
-        to_add.append(PajGpsSensor(device_id, "lng", "mdi:map-marker", f"{device['name']} Longitude", token, "longitude", "°"))
+        #to_add.append(PajGpsSensor(device_id, "lng", "mdi:map-marker", f"{device['name']} Longitude", token, "longitude", "°"))
     async_add_entities(to_add, update_before_add=True)
 
 
@@ -230,13 +230,13 @@ class PajGpsSensor(SensorEntity):
         self._attr_unique_id = f'pajgps_{gps_id}_{field}'
         self._attr_extra_state_attributes = {}
 
-        self._attr_device_info = DeviceInfo(
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, gps_id)},
-            default_name="PAJ GPS Tracker",
-            default_manufacturer="PAJ GPS",
-            sw_version=VERSION,
-        )
+        #self._attr_device_info = DeviceInfo(
+        #    entry_type=DeviceEntryType.SERVICE,
+        #    identifiers={(DOMAIN, str(gps_id))},
+        #    default_name="PAJ GPS Tracker",
+        #    default_manufacturer="PAJ GPS",
+        #    sw_version=VERSION,
+        #)
 
 
     async def refresh_token(self):
