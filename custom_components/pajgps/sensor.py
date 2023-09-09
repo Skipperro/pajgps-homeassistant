@@ -232,8 +232,8 @@ class PajGpsSensor(SensorEntity):
 
         self._attr_device_info = DeviceInfo(
             entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, 'pajgps')},
-            default_name=f"PAJ GPS Tracker - {name} [{gps_id}] - {field}",
+            identifiers={(DOMAIN, gps_id)},
+            default_name="PAJ GPS Tracker",
             default_manufacturer="PAJ GPS",
             sw_version=VERSION,
         )
