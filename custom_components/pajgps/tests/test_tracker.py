@@ -1,6 +1,6 @@
 import os
 import unittest
-import custom_components.pajgps.sensor as sensor
+import custom_components.pajgps.device_tracker as tracker
 from dotenv import load_dotenv
 
 class PajGpsTrackerTest(unittest.IsolatedAsyncioTestCase):
@@ -22,7 +22,7 @@ class PajGpsTrackerTest(unittest.IsolatedAsyncioTestCase):
         if self.email == None or self.password == None:
             return
         # Test login with valid credentials
-        token = await sensor.get_login_token(self.email, self.password)
+        token = await tracker.get_login_token(self.email, self.password)
         assert token != None
         # Test if login token is valid bearer header
         if token != None:
@@ -30,26 +30,26 @@ class PajGpsTrackerTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_devices(self):
         # Get Authoization token
-        token = await sensor.get_login_token(self.email, self.password)
+        token = await tracker.get_login_token(self.email, self.password)
         assert token != None
         if token == None:
             return
         # Test if get_devices returns a list of devices
-        devices = await sensor.get_devices(token)
+        devices = await tracker.get_devices(token)
         assert devices != None
 
     async def test_get_device_data(self):
         # Get Authoization token
-        token = await sensor.get_login_token(self.email, self.password)
+        token = await tracker.get_login_token(self.email, self.password)
         assert token != None
         if token == None:
             return
         # Get devices
-        devices = await sensor.get_devices(token)
+        devices = await tracker.get_devices(token)
         assert devices != None
         if devices == None:
             return
         # Test if get_device_data returns a list of device data
         for device in devices:
-            device_data = await sensor.get_device_data(token, device)
+            device_data = await tracker.get_device_data(token, device)
             assert device_data != None
