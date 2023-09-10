@@ -1,18 +1,10 @@
 """Platform for sensor integration."""
 from __future__ import annotations
 
-import uuid
-from datetime import timedelta, datetime
-from homeassistant.components.sensor import (SensorEntity)
+from datetime import timedelta
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.core import HomeAssistant
 from homeassistant import config_entries
-from homeassistant.helpers.device_registry import DeviceEntryType
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_registry import async_get, async_entries_for_config_entry
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity, DataUpdateCoordinator, UpdateFailed,
-)
 from custom_components.pajgps.const import DOMAIN
 import aiohttp
 import logging
@@ -23,7 +15,6 @@ API_URL = "https://connect.paj-gps.de/api/"
 VERSION = "0.1.0"
 
 TOKEN = None
-
 
 class LoginResponse:
     token = None
@@ -45,7 +36,7 @@ class ApiError:
         self.error = json["error"]
 
 
-class PAJGPSTrackerData:
+class PajGpsTrackerData:
     # From JSON:
     # {
     #       "lat": 49.02193166666667,
@@ -73,6 +64,84 @@ class PAJGPSTrackerData:
     def __str__(self):
         return f"lat: {self.lat}, lng: {self.lng}, direction: {self.direction}, battery: {self.battery}, speed: {self.speed}, iddevice: {self.iddevice}"
 
+
+# Define a GPS tracker sensor/device class for Home Assistant
+class PajGpsSensor(TrackerEntity):
+
+    _last_data = None
+
+    def __init__(self, gps_id: str, icon:str, name: str, token: str):
+        self._gps_id = gps_id
+        self._token = token
+        self._attr_icon = icon
+        self._attr_name = name
+        self._attr_unique_id = f'pajgps_{gps_id}'
+        self._attr_extra_state_attributes = {}
+
+        #self._attr_device_info = DeviceInfo(
+        #    entry_type=DeviceEntryType.SERVICE,
+        #    identifiers={(DOMAIN, str(gps_id))},
+        #    default_name="PAJ GPS Tracker",
+        #    default_manufacturer="PAJ GPS",
+        #    sw_version=VERSION,
+        #)
+
+    @property
+    def should_poll(self) -> bool:
+        return True
+
+    @property
+    def latitude(self) -> float | None:
+        """Return latitude value of the device."""
+        # If _last_data is not None, return latitude from _last_data. Else return None.
+        if self._last_data is not None:
+            return self._last_data.lat
+        else:
+            return None
+
+    @property
+    def longitude(self) -> float | None:
+        """Return longitude value of the device."""
+        # If _last_data is not None, return longitude from _last_data. Else return None.
+        if self._last_data is not None:
+            return self._last_data.lng
+        else:
+            return None
+
+    @property
+    def battery_level(self) -> int | None:
+        """Return the battery level of the device."""
+        # If _last_data is not None, return battery level from _last_data. Else return None.
+        if self._last_data is not None:
+            return self._last_data.battery
+        else:
+            return None
+
+    @property
+    def source_type(self) -> str:
+        """Return the source type, eg gps or router, of the device."""
+        return "gps"
+
+    async def refresh_token(self):
+        global TOKEN
+        self._token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
+                                           self.hass.config_entries.async_entries(DOMAIN)[0].data["password"])
+        TOKEN = self._token
+    async def async_update(self) -> None:
+        global TOKEN
+        """Fetch new state data for the sensor."""
+        # Get the GPS data from the API
+        try:
+            await self.refresh_token()
+            tracker_data = await get_device_data(TOKEN, self._gps_id)
+            if tracker_data is not None:
+                self._last_data = tracker_data
+            else:
+                _LOGGER.error(f"No data for PAJ GPS device {self._gps_id}")
+
+        except Exception as e:
+            _LOGGER.error(f'{e}')
+            self._attr_native_value = None
 
 
 async def get_login_token(email, password):
@@ -183,7 +252,7 @@ async def get_device_data(token, device_id):
             try:
                 if response.status == 200:
                     json = await response.json()
-                    tracker_data = PAJGPSTrackerData(json["success"][0])
+                    tracker_data = PajGpsTrackerData(json["success"][0])
                     return tracker_data
                 else:
                     # Handle error using ApiError class
@@ -221,82 +290,3 @@ async def async_setup_entry(
     for device_id, device in devices.items():
         to_add.append(PajGpsSensor(device_id, "mdi:map-marker", f"PAJ GPS {device_id}", token))
     async_add_entities(to_add, update_before_add=True)
-
-
-# Define a GPS tracker sensor/device class for Home Assistant
-class PajGpsSensor(TrackerEntity):
-
-    _last_data = None
-
-    def __init__(self, gps_id: str, icon:str, name: str, token: str):
-        self._gps_id = gps_id
-        self._token = token
-        self._attr_icon = icon
-        self._attr_name = name
-        self._attr_unique_id = f'pajgps_{gps_id}'
-        self._attr_extra_state_attributes = {}
-
-        #self._attr_device_info = DeviceInfo(
-        #    entry_type=DeviceEntryType.SERVICE,
-        #    identifiers={(DOMAIN, str(gps_id))},
-        #    default_name="PAJ GPS Tracker",
-        #    default_manufacturer="PAJ GPS",
-        #    sw_version=VERSION,
-        #)
-
-    @property
-    def should_poll(self) -> bool:
-        return True
-
-    @property
-    def latitude(self) -> float | None:
-        """Return latitude value of the device."""
-        # If _last_data is not None, return latitude from _last_data. Else return None.
-        if self._last_data is not None:
-            return self._last_data.lat
-        else:
-            return None
-
-    @property
-    def longitude(self) -> float | None:
-        """Return longitude value of the device."""
-        # If _last_data is not None, return longitude from _last_data. Else return None.
-        if self._last_data is not None:
-            return self._last_data.lng
-        else:
-            return None
-
-    @property
-    def battery_level(self) -> int | None:
-        """Return the battery level of the device."""
-        # If _last_data is not None, return battery level from _last_data. Else return None.
-        if self._last_data is not None:
-            return self._last_data.battery
-        else:
-            return None
-
-    @property
-    def source_type(self) -> str:
-        """Return the source type, eg gps or router, of the device."""
-        return "gps"
-
-    async def refresh_token(self):
-        global TOKEN
-        self._token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
-                                           self.hass.config_entries.async_entries(DOMAIN)[0].data["password"])
-        TOKEN = self._token
-    async def async_update(self) -> None:
-        global TOKEN
-        """Fetch new state data for the sensor."""
-        # Get the GPS data from the API
-        try:
-            await self.refresh_token()
-            tracker_data = await get_device_data(TOKEN, self._gps_id)
-            if tracker_data is not None:
-                self._last_data = tracker_data
-            else:
-                _LOGGER.error(f"No data for PAJ GPS device {self._gps_id}")
-
-        except Exception as e:
-            _LOGGER.error(f'{e}')
-            self._attr_native_value = None
