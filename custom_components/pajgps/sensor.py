@@ -4,6 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import timedelta, datetime
 from homeassistant.components.sensor import (SensorEntity)
+from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.core import HomeAssistant
 from homeassistant import config_entries
 from homeassistant.helpers.device_registry import DeviceEntryType
@@ -22,7 +23,6 @@ API_URL = "https://connect.paj-gps.de/api/"
 VERSION = "0.1.0"
 
 TOKEN = None
-LAST_TOKEN_REFRESH = None
 
 
 class LoginResponse:
@@ -219,23 +219,21 @@ async def async_setup_entry(
     # Add sensors
     to_add = []
     for device_id, device in devices.items():
-        to_add.append(PajGpsSensor(device_id, "lat", "mdi:map-marker", f"PAJ GPS {device_id} Latitude", token, None, "degrees"))
-        to_add.append(PajGpsSensor(device_id, "lng", "mdi:map-marker", f"PAJ GPS {device_id} Longitude", token, None, "degrees"))
+        to_add.append(PajGpsSensor(device_id, "mdi:map-marker", f"PAJ GPS {device_id}", token))
     async_add_entities(to_add, update_before_add=True)
 
 
 # Define a GPS tracker sensor/device class for Home Assistant
-class PajGpsSensor(SensorEntity):
+class PajGpsSensor(TrackerEntity):
 
-    def __init__(self, gps_id: str, field: str, icon:str, name: str, token: str, device_class: str, unit: str):
+    _last_data = None
+
+    def __init__(self, gps_id: str, icon:str, name: str, token: str):
         self._gps_id = gps_id
-        self._field = field
         self._token = token
-        self._unit = unit
         self._attr_icon = icon
         self._attr_name = name
-        self._attr_device_class = device_class
-        self._attr_unique_id = f'pajgps_{gps_id}_{field}'
+        self._attr_unique_id = f'pajgps_{gps_id}'
         self._attr_extra_state_attributes = {}
 
         #self._attr_device_info = DeviceInfo(
@@ -246,16 +244,42 @@ class PajGpsSensor(SensorEntity):
         #    sw_version=VERSION,
         #)
 
+    @property
+    def should_poll(self) -> bool:
+        return True
+
+    @property
+    def latitude(self) -> float | None:
+        """Return latitude value of the device."""
+        # If _last_data is not None, return latitude from _last_data. Else return None.
+        if self._last_data is not None:
+            return self._last_data.lat
+        else:
+            return None
+
+    @property
+    def longitude(self) -> float | None:
+        """Return longitude value of the device."""
+        # If _last_data is not None, return longitude from _last_data. Else return None.
+        if self._last_data is not None:
+            return self._last_data.lng
+        else:
+            return None
+
+    @property
+    def battery_level(self) -> int | None:
+        """Return the battery level of the device."""
+        # If _last_data is not None, return battery level from _last_data. Else return None.
+        if self._last_data is not None:
+            return self._last_data.battery
+        else:
+            return None
+
     async def refresh_token(self):
-        global TOKEN, LAST_TOKEN_REFRESH
-        # If last token refresh happened in the last 10 minutes, don't refresh
-        if LAST_TOKEN_REFRESH != None and (datetime.now() - LAST_TOKEN_REFRESH).seconds < 600:
-            return
-        # Refresh token
+        global TOKEN
         self._token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
                                            self.hass.config_entries.async_entries(DOMAIN)[0].data["password"])
         TOKEN = self._token
-        LAST_TOKEN_REFRESH = datetime.now()
     async def async_update(self) -> None:
         global TOKEN
         """Fetch new state data for the sensor."""
@@ -264,18 +288,9 @@ class PajGpsSensor(SensorEntity):
             await self.refresh_token()
             tracker_data = await get_device_data(TOKEN, self._gps_id)
             if tracker_data is not None:
-                if self._field == "lat":
-                    self._attr_native_value = tracker_data.lat
-                elif self._field == "lng":
-                    self._attr_native_value = tracker_data.lng
-                self._attr_device_class = None
-                self._attr_native_unit_of_measurement = 'degrees'
-                self._attr_state_class = 'measurement'
-                self._attr_extra_state_attributes['battery'] = tracker_data.battery
+                self._last_data = tracker_data
             else:
-                self._attr_extra_state_attributes['data'] = None
-                self._attr_native_value = 0.0
-                _LOGGER.error(f"No data for device {self._gps_id}")
+                _LOGGER.error(f"No data for PAJ GPS device {self._gps_id}")
 
         except Exception as e:
             _LOGGER.error(f'{e}')
