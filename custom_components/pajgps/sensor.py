@@ -275,6 +275,11 @@ class PajGpsSensor(TrackerEntity):
         else:
             return None
 
+    @property
+    def source_type(self) -> str:
+        """Return the source type, eg gps or router, of the device."""
+        return "gps"
+
     async def refresh_token(self):
         global TOKEN
         self._token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
