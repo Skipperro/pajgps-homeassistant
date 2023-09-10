@@ -19,7 +19,7 @@ It's a custom integration created entirely by me (Skipperro), and thus PAJ UG is
 
 ## Supported devices
 
-This integration was tested only with single **Allround Finder 2G 2.0**, but it is using standard API provided by PAJ, so it should work with other devices from PAJ GPS. 
+This integration was tested only with single **Allround Finder 2G 2.0**, but it is using standard API provided by PAJ, so it should work with other devices. Please report an issue if you will find any problems with other devices. 
 
 ## Installation
 
@@ -37,4 +37,4 @@ repository into the `custom_components/pajgps` directory.
 ## Configuration
 
 The integration will automatically discover all your devices connected to your account on www.v2.finder-portal.com. 
-They will be added as entities to Home Assistant base on their ID from the API (not the number on the device).
+They will be added as entities to Home Assistant based on their ID from the API (not the number on the device).
