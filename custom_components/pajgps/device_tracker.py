@@ -10,7 +10,7 @@ import aiohttp
 import logging
 
 _LOGGER = logging.getLogger(__name__)
-SCAN_INTERVAL = timedelta(seconds=120)
+SCAN_INTERVAL = timedelta(seconds=30)
 API_URL = "https://connect.paj-gps.de/api/"
 VERSION = "0.1.0"
 

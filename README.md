@@ -5,22 +5,29 @@
 ![](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=integration%20usage&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.pajgps.total)
 
 
-This integration allows you to use PAJ GPS devices (www.paj-gps.de) in Home Assistant.
+## Introduction
+Welcome to the PAJ GPS Tracker Integration for Home Assistant!<br>
+This integration enables you to effortlessly incorporate PAJ GPS devices from www.paj-gps.de into your Home Assistant setup.
 
 ## Disclaimer
 
-This integration is not official software from PAJ GPS.
-It's a custom integration created entirely by me (Skipperro), and thus PAJ UG is not responsible for any damage/issues caused by this integration, nor it offers any end-user support for it.
+- This integration is created with acknowledgement and limited support from PAJ GPS but **this integration is not official software from PAJ UG**.<br>
+- It's a custom integration created entirely by me (Skipperro), and thus PAJ UG is not responsible for any damage/issues caused by this integration, nor it offers any end-user support for it.
 
 ## Features
-
 - [x] Device tracking (Longitude, Latitude)
 - [x] Device battery level
 
+## Planned features
+- [ ] Device status (moving, stopped, etc.)
+- [ ] Device speed
+- [ ] Device altitude
+- [ ] Notifications (SOS, low battery, etc.)
+- [ ] Geofencing
+
 ## Supported devices
 
-This integration was tested only with single **Allround Finder 2G 2.0**, but it is using standard API provided by PAJ, so it should work with other devices. Please report an issue if you will find any problems with other devices. 
-
+While this integration was primarily tested with the **Allround Finder 2G 2.0**, it leverages the standard API provided by PAJ. Therefore, it should be compatible with other PAJ GPS devices. If you encounter any issues with different devices, please report them.
 ## Installation
 
 1. **Make a proper setup of your PAJ GPS device**. You need to have an account on www.v2.finder-portal.com and your device must be properly configured and connected to the platform.
@@ -38,3 +45,5 @@ repository into the `custom_components/pajgps` directory.
 
 The integration will automatically discover all your devices connected to your account on www.v2.finder-portal.com. 
 They will be added as entities to Home Assistant based on their ID from the API (not the number on the device).
+
+There is no need to configure anything else.
