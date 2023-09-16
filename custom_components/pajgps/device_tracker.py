@@ -5,6 +5,8 @@ from datetime import timedelta
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.core import HomeAssistant
 from homeassistant import config_entries
+from homeassistant.helpers.entity import DeviceInfo
+
 from custom_components.pajgps.const import DOMAIN
 import aiohttp
 import logging
@@ -78,13 +80,22 @@ class PajGpsSensor(TrackerEntity):
         self._attr_unique_id = f'pajgps_{gps_id}'
         self._attr_extra_state_attributes = {}
 
-        #self._attr_device_info = DeviceInfo(
-        #    entry_type=DeviceEntryType.SERVICE,
-        #    identifiers={(DOMAIN, str(gps_id))},
-        #    default_name="PAJ GPS Tracker",
-        #    default_manufacturer="PAJ GPS",
-        #    sw_version=VERSION,
-        #)
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        """Return the device info."""
+        return {
+            "identifiers": {(DOMAIN, self._gps_id)},
+            "name": self._attr_name,
+            "manufacturer": "PAJ GPS",
+            "model": "PAJ GPS Tracker",
+            "sw_version": VERSION,
+        }
+
+    @property
+    def raw_data(self) -> str | None:
+        """Return the raw data."""
+        return str(self._last_data)
 
     @property
     def should_poll(self) -> bool:
