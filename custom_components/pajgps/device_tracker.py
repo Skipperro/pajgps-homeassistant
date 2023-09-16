@@ -47,6 +47,7 @@ class PajGpsTrackerData:
     #       "battery": 70,
     #       "speed": 0,
     #       "iddevice": 1237050,
+    #       "accuracy": 0
     #     }
     lat = None
     lng = None
@@ -54,6 +55,7 @@ class PajGpsTrackerData:
     battery = None
     speed = None
     iddevice = None
+    accuracy = None
 
     def __init__(self, json):
         self.lat = json["lat"]
@@ -62,6 +64,7 @@ class PajGpsTrackerData:
         self.battery = json["battery"]
         self.speed = json["speed"]
         self.iddevice = json["iddevice"]
+        self.accuracy = json["accuracy"]
 
     def __str__(self):
         return f"lat: {self.lat}, lng: {self.lng}, direction: {self.direction}, battery: {self.battery}, speed: {self.speed}, iddevice: {self.iddevice}"
@@ -72,13 +75,18 @@ class PajGpsSensor(TrackerEntity):
 
     _last_data = None
 
-    def __init__(self, gps_id: str, icon:str, name: str, token: str):
+    def __init__(self, gps_id: str, imei: str, model_nr: int, token: str):
         self._gps_id = gps_id
         self._token = token
-        self._attr_icon = icon
-        self._attr_name = name
+        self._attr_icon = "mdi:map-marker"
+        self._attr_name = f"PAJ GPS {self._gps_id}"
         self._attr_unique_id = f'pajgps_{gps_id}'
         self._attr_extra_state_attributes = {}
+
+        self._imei = imei
+        self._model_nr = model_nr
+        self._model_name = f"PAJ GPS {self._model_nr}"
+
 
 
     @property
@@ -88,14 +96,9 @@ class PajGpsSensor(TrackerEntity):
             "identifiers": {(DOMAIN, self._gps_id)},
             "name": self._attr_name,
             "manufacturer": "PAJ GPS",
-            "model": "PAJ GPS Tracker",
+            "model": self._model_name,
             "sw_version": VERSION,
         }
-
-    @property
-    def raw_data(self) -> str | None:
-        """Return the raw data."""
-        return str(self._last_data)
 
     @property
     def should_poll(self) -> bool:
@@ -301,5 +304,5 @@ async def async_setup_entry(
     # Add sensors
     to_add = []
     for device_id, device in devices.items():
-        to_add.append(PajGpsSensor(device_id, "mdi:map-marker", f"PAJ GPS {device_id}", token))
+        to_add.append(PajGpsSensor(device_id, device["imei"], device["model_nr"], token))
     async_add_entities(to_add, update_before_add=True)
