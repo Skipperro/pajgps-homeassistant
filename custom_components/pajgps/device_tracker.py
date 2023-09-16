@@ -147,6 +147,8 @@ class PajGpsSensor(TrackerEntity):
             tracker_data = await get_device_data(TOKEN, self._gps_id)
             if tracker_data is not None:
                 self._last_data = tracker_data
+                # Add extra attribute with raw data as string
+                self._attr_extra_state_attributes["raw_data"] = str(tracker_data)
             else:
                 _LOGGER.error(f"No data for PAJ GPS device {self._gps_id}")
 
