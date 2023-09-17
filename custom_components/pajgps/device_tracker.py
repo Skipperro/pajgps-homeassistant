@@ -115,30 +115,68 @@ class PajGpsBatterySensor(SensorEntity):
     def icon(self) -> str | None:
         battery_level = self.native_value
         if battery_level is not None:
-            if battery_level >= 90:
+            if battery_level == 100:
                 return "mdi:battery"
-            elif battery_level >= 80:
+            elif battery_level >= 90:
                 return "mdi:battery-90"
-            elif battery_level >= 70:
+            elif battery_level >= 80:
                 return "mdi:battery-80"
-            elif battery_level >= 60:
+            elif battery_level >= 70:
                 return "mdi:battery-70"
-            elif battery_level >= 50:
+            elif battery_level >= 60:
                 return "mdi:battery-60"
-            elif battery_level >= 40:
+            elif battery_level >= 50:
                 return "mdi:battery-50"
-            elif battery_level >= 30:
+            elif battery_level >= 40:
                 return "mdi:battery-40"
-            elif battery_level >= 20:
+            elif battery_level >= 30:
                 return "mdi:battery-30"
-            elif battery_level >= 10:
+            elif battery_level >= 20:
                 return "mdi:battery-20"
-            elif battery_level >= 0:
+            elif battery_level >= 10:
                 return "mdi:battery-10"
             else:
                 return "mdi:battery-alert"
         else:
             return "mdi:battery-alert"
+
+
+# Speed sensor reading data from GPS sensor speed attribute
+class PajGpsSpeedSensor(SensorEntity):
+
+    gpssensor: PajGpsSensor = None
+    def __init__(self, gpssensor: PajGpsSensor):
+        self.gpssensor = gpssensor
+        self._attr_icon = "mdi:speedometer"
+        self._attr_name = f"PAJ GPS {self.gpssensor._gps_id} Speed"
+        self._attr_unique_id = f'pajgps_{self.gpssensor._gps_id}_speed'
+        self._attr_extra_state_attributes = {}
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        """Return the device info."""
+        return {
+            "identifiers": {(DOMAIN, self.gpssensor._gps_id)},
+            "name": self._attr_name,
+            "manufacturer": "PAJ GPS",
+            "model": self.gpssensor._model_name,
+            "sw_version": VERSION,
+        }
+
+    @property
+    def native_value (self) -> int | None:
+        if self.gpssensor.speed is not None:
+            return int(self.gpssensor.speed)
+        else:
+            return None
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        return "km/h"
+
+    @property
+    def should_poll(self) -> bool:
+        return True
 
 
 # Define a GPS tracker sensor/device class for Home Assistant
@@ -206,6 +244,15 @@ class PajGpsSensor(TrackerEntity):
     def source_type(self) -> str:
         """Return the source type, eg gps or router, of the device."""
         return "gps"
+
+    @property
+    def speed(self) -> int | None:
+        """Return the speed of the device."""
+        # If _last_data is not None, return speed from _last_data. Else return None.
+        if self._last_data is not None:
+            return self._last_data.speed
+        else:
+            return None
 
     async def refresh_token(self):
         global TOKEN
@@ -380,5 +427,7 @@ async def async_setup_entry(
         to_add.append(gpssensor)
         # Add simple battery sensor for this device that reads its value from the GPS sensor battery_level attribute
         to_add.append(PajGpsBatterySensor(gpssensor))
+        # Add speed sensor for this device that reads its value from the GPS sensor speed attribute
+        to_add.append(PajGpsSpeedSensor(gpssensor))
 
     async_add_entities(to_add, update_before_add=True)
