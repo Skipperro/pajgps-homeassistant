@@ -8,6 +8,9 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
+    hass.data.setdefault(DOMAIN, {})
+    return True
 
 async def async_setup_entry(
     hass: core.HomeAssistant, entry: config_entries.ConfigEntry
@@ -21,10 +24,11 @@ async def async_setup_entry(
     hass_data["unsub_options_update_listener"] = unsub_options_update_listener
     hass.data[DOMAIN][entry.entry_id] = hass_data
 
-    # Forward the setup to the device_tracker platform.
+    # Forward the setup to the device_tracker platform if entry is device_tracker.
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, "device_tracker")
     )
+
     return True
 
 
@@ -53,6 +57,7 @@ async def async_unload_entry(
 
     return unload_ok
 
-async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
-    hass.data.setdefault(DOMAIN, {})
-    return True
+
+
+
+# TODO: Add async_remove_config_entry_device functionality

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.core import HomeAssistant
 from homeassistant import config_entries
 from homeassistant.helpers.entity import DeviceInfo
@@ -68,6 +69,36 @@ class PajGpsTrackerData:
 
     def __str__(self):
         return f"lat: {self.lat}, lng: {self.lng}, direction: {self.direction}, battery: {self.battery}, speed: {self.speed}, iddevice: {self.iddevice}"
+
+# Battery sensor reading data from GPS sensor battery_level attribute
+class PajGpsBatterySensor(SensorEntity):
+
+    gpssensor: PajGpsSensor = None
+    def __init__(self, gpssensor: PajGpsSensor):
+        self.gpssensor = gpssensor
+        self._attr_icon = "mdi:battery"
+        self._attr_name = f"PAJ GPS {self.gpssensor._gps_id} Battery Level"
+        self._attr_unique_id = f'pajgps_{self.gpssensor._gps_id}_battery'
+        self._attr_extra_state_attributes = {}
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        """Return the device info."""
+        return {
+            "identifiers": {(DOMAIN, self.gpssensor._gps_id)},
+            "name": self._attr_name,
+            "manufacturer": "PAJ GPS",
+            "model": self.gpssensor._model_name,
+            "sw_version": VERSION,
+        }
+
+    @property
+    def device_class(self) -> SensorDeviceClass | str | None:
+        return SensorDeviceClass.BATTERY
+
+    @property
+    def native_value (self) -> int | None:
+        return self.gpssensor.battery_level
 
 
 # Define a GPS tracker sensor/device class for Home Assistant
@@ -280,6 +311,7 @@ async def get_device_data(token, device_id):
                 _LOGGER.error(f"{e}")
                 return None
 
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: config_entries.ConfigEntry,
@@ -304,5 +336,9 @@ async def async_setup_entry(
     # Add sensors
     to_add = []
     for device_id, device in devices.items():
-        to_add.append(PajGpsSensor(device_id, device["imei"], device["model_nr"], token))
+        gpssensor = PajGpsSensor(device_id, device["imei"], device["model_nr"], token)
+        to_add.append(gpssensor)
+        # Add simple battery sensor for this device that reads its value from the GPS sensor battery_level attribute
+        to_add.append(PajGpsBatterySensor(gpssensor))
+
     async_add_entities(to_add, update_before_add=True)
