@@ -98,7 +98,47 @@ class PajGpsBatterySensor(SensorEntity):
 
     @property
     def native_value (self) -> int | None:
-        return self.gpssensor.battery_level
+        if self.gpssensor.battery_level is not None:
+            return int(self.gpssensor.battery_level)
+        else:
+            return None
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        return "%"
+
+    @property
+    def should_poll(self) -> bool:
+        return True
+
+    @property
+    def icon(self) -> str | None:
+        battery_level = self.native_value
+        if battery_level is not None:
+            if battery_level >= 90:
+                return "mdi:battery"
+            elif battery_level >= 80:
+                return "mdi:battery-90"
+            elif battery_level >= 70:
+                return "mdi:battery-80"
+            elif battery_level >= 60:
+                return "mdi:battery-70"
+            elif battery_level >= 50:
+                return "mdi:battery-60"
+            elif battery_level >= 40:
+                return "mdi:battery-50"
+            elif battery_level >= 30:
+                return "mdi:battery-40"
+            elif battery_level >= 20:
+                return "mdi:battery-30"
+            elif battery_level >= 10:
+                return "mdi:battery-20"
+            elif battery_level >= 0:
+                return "mdi:battery-10"
+            else:
+                return "mdi:battery-alert"
+        else:
+            return "mdi:battery-alert"
 
 
 # Define a GPS tracker sensor/device class for Home Assistant
