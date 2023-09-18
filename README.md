@@ -3,7 +3,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![GitHub release](https://img.shields.io/github/release/skipperro/pajgps-homeassistant.svg)](https://GitHub.com/skipperro/pajgps-homeassistant/releases/)
 ![](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=integration%20usage&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.pajgps.total)
-![PAJ GPS](images/logo.png)
+![PAJ GPS](https://raw.githubusercontent.com/Skipperro/pajgps-homeassistant/main/images/logo.png)
 ## Introduction
 Welcome to the PAJ GPS Tracker Integration for Home Assistant!<br>
 This integration enables you to effortlessly incorporate PAJ GPS devices from www.paj-gps.de into your Home Assistant setup.

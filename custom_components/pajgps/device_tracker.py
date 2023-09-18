@@ -1,6 +1,7 @@
 """Platform for sensor integration."""
 from __future__ import annotations
 
+import time
 from datetime import timedelta
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
@@ -18,6 +19,7 @@ API_URL = "https://connect.paj-gps.de/api/"
 VERSION = "0.2.0"
 
 TOKEN = None
+LAST_TOKEN_REFRESH = None
 
 class LoginResponse:
     token = None
@@ -255,7 +257,13 @@ class PajGpsSensor(TrackerEntity):
             return None
 
     async def refresh_token(self):
-        global TOKEN
+        global TOKEN, LAST_TOKEN_REFRESH
+
+        # Refresh token once every 10 minutes
+        if LAST_TOKEN_REFRESH is None or time.time() - LAST_TOKEN_REFRESH > 600:
+            LAST_TOKEN_REFRESH = time.time()
+        else:
+            return
         self._token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
                                            self.hass.config_entries.async_entries(DOMAIN)[0].data["password"])
         TOKEN = self._token
