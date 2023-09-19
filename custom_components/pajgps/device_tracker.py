@@ -16,7 +16,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
 API_URL = "https://connect.paj-gps.de/api/"
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 
 TOKEN = None
 LAST_TOKEN_REFRESH = None
@@ -101,7 +101,13 @@ class PajGpsBatterySensor(SensorEntity):
     @property
     def native_value (self) -> int | None:
         if self.gpssensor.battery_level is not None:
-            return int(self.gpssensor.battery_level)
+            new_value = int(self.gpssensor.battery_level)
+            # Make sure value is between 0 and 100
+            if new_value < 0:
+                new_value = 0
+            elif new_value > 100:
+                new_value = 100
+            return new_value
         else:
             return None
 
@@ -168,7 +174,13 @@ class PajGpsSpeedSensor(SensorEntity):
     @property
     def native_value (self) -> int | None:
         if self.gpssensor.speed is not None:
-            return int(self.gpssensor.speed)
+            new_value = int(self.gpssensor.speed)
+            # Make sure value is between 0 and 1000
+            if new_value < 0:
+                new_value = 0
+            elif new_value > 1000:
+                new_value = 1000
+            return new_value
         else:
             return None
 
