@@ -88,10 +88,6 @@ class PajGpsBatterySensor(SensorEntity):
         """Return the device info."""
         return {
             "identifiers": {(DOMAIN, self.gpssensor._gps_id)},
-            "name": self._attr_name,
-            "manufacturer": "PAJ GPS",
-            "model": self.gpssensor._model_name,
-            "sw_version": VERSION,
         }
 
     @property
@@ -165,10 +161,6 @@ class PajGpsSpeedSensor(SensorEntity):
         """Return the device info."""
         return {
             "identifiers": {(DOMAIN, self.gpssensor._gps_id)},
-            "name": self._attr_name,
-            "manufacturer": "PAJ GPS",
-            "model": self.gpssensor._model_name,
-            "sw_version": VERSION,
         }
 
     @property
