@@ -9,14 +9,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant import config_entries
 from homeassistant.helpers.entity import DeviceInfo
 
-from custom_components.pajgps.const import DOMAIN
+from custom_components.pajgps.const import DOMAIN, PAJGPS_DEVICES
 import aiohttp
 import logging
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
 API_URL = "https://connect.paj-gps.de/api/"
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 
 TOKEN = None
 LAST_TOKEN_REFRESH = None
@@ -202,14 +202,16 @@ class PajGpsSensor(TrackerEntity):
         self._gps_id = gps_id
         self._token = token
         self._attr_icon = "mdi:map-marker"
-        self._attr_name = f"PAJ GPS {self._gps_id}"
+        if self.name is None:
+            self._attr_name = f"PAJ GPS {self._gps_id}"
         self._attr_unique_id = f'pajgps_{gps_id}'
         self._attr_extra_state_attributes = {}
 
         self._imei = imei
         self._model_nr = model_nr
         self._model_name = f"PAJ GPS {self._model_nr}"
-
+        if self._model_nr in PAJGPS_DEVICES.keys():
+            self._model_name = PAJGPS_DEVICES[self._model_nr]["name"]
 
 
     @property
@@ -443,10 +445,13 @@ async def async_setup_entry(
     # Add sensors
     to_add = []
     for device_id, device in devices.items():
+        model_nr = device["model_nr"]
         gpssensor = PajGpsSensor(device_id, device["imei"], device["model_nr"], token)
         to_add.append(gpssensor)
         # Add simple battery sensor for this device that reads its value from the GPS sensor battery_level attribute
-        to_add.append(PajGpsBatterySensor(gpssensor))
+        if model_nr in PAJGPS_DEVICES.keys():
+            if PAJGPS_DEVICES[model_nr]["config"]["battery"]:
+                to_add.append(PajGpsBatterySensor(gpssensor))
         # Add speed sensor for this device that reads its value from the GPS sensor speed attribute
         to_add.append(PajGpsSpeedSensor(gpssensor))
 
