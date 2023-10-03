@@ -16,7 +16,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
 API_URL = "https://connect.paj-gps.de/api/"
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 
 TOKEN = None
 LAST_TOKEN_REFRESH = None
@@ -204,6 +204,8 @@ class PajGpsSensor(TrackerEntity):
         self._attr_icon = "mdi:map-marker"
         if self.name is None:
             self._attr_name = f"PAJ GPS {self._gps_id}"
+        else:
+            self._attr_name = self.name
         self._attr_unique_id = f'pajgps_{gps_id}'
         self._attr_extra_state_attributes = {}
 
