@@ -16,7 +16,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
 API_URL = "https://connect.paj-gps.de/api/"
-VERSION = "0.2.3"
+VERSION = "0.3.0"
 
 TOKEN = None
 LAST_TOKEN_REFRESH = None
