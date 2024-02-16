@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant import config_entries
 from homeassistant.helpers.entity import DeviceInfo
 
-from custom_components.pajgps.const import DOMAIN, PAJGPS_DEVICES
+from custom_components.pajgps.const import DOMAIN
 import aiohttp
 import logging
 
@@ -190,7 +190,7 @@ class PajGpsSensor(TrackerEntity):
 
     _last_data = None
 
-    def __init__(self, gps_id: str, imei: str, model_nr: int, token: str):
+    def __init__(self, gps_id: str, imei: str, model: str, has_battery: bool, token: str):
         self._gps_id = gps_id
         self._token = token
         self._attr_icon = "mdi:map-marker"
@@ -202,10 +202,8 @@ class PajGpsSensor(TrackerEntity):
         self._attr_extra_state_attributes = {}
 
         self._imei = imei
-        self._model_nr = model_nr
-        self._model_name = f"PAJ GPS {self._model_nr}"
-        if self._model_nr in PAJGPS_DEVICES.keys():
-            self._model_name = PAJGPS_DEVICES[self._model_nr]["name"]
+        self._model = model
+        self._has_battery = has_battery
 
 
     @property
@@ -215,7 +213,7 @@ class PajGpsSensor(TrackerEntity):
             "identifiers": {(DOMAIN, self._gps_id)},
             "name": self._attr_name,
             "manufacturer": "PAJ GPS",
-            "model": self._model_name,
+            "model": self._model,
             "sw_version": VERSION,
         }
 
@@ -340,7 +338,7 @@ async def get_devices(token):
     #   -H 'accept: application/json' \
     #   -H 'Authorization: Bearer TOKEN' \
     #   -H 'X-CSRF-TOKEN: '
-    # Returns dictionary of device id, name, imei and model_nr from response.success.
+    # Returns dictionary of device id, name, imei, model and has_battery from response.success.
 
     url = API_URL + "device"
     payload = {}
@@ -362,7 +360,8 @@ async def get_devices(token):
                             "id": device["id"],
                             "name": device["name"],
                             "imei": device["imei"],
-                            "model_nr": device["model_nr"]
+                            "model": device["device_models"][0]["model"],
+                            "has_battery": device["device_models"][0]["standalone_battery"] == 1
                         }
                     return results
                 else:
@@ -439,13 +438,12 @@ async def async_setup_entry(
     # Add sensors
     to_add = []
     for device_id, device in devices.items():
-        model_nr = device["model_nr"]
-        gpssensor = PajGpsSensor(device_id, device["imei"], device["model_nr"], token)
+        model = device["model"]
+        gpssensor = PajGpsSensor(device_id, device["imei"], device["model"], device["has_battery"], token)
         to_add.append(gpssensor)
         # Add simple battery sensor for this device that reads its value from the GPS sensor battery_level attribute
-        if model_nr in PAJGPS_DEVICES.keys():
-            if PAJGPS_DEVICES[model_nr]["config"]["battery"]:
-                to_add.append(PajGpsBatterySensor(gpssensor))
+        if device["has_battery"]:
+            to_add.append(PajGpsBatterySensor(gpssensor))
         # Add speed sensor for this device that reads its value from the GPS sensor speed attribute
         to_add.append(PajGpsSpeedSensor(gpssensor))
 

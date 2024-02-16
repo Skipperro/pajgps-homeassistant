@@ -36,7 +36,8 @@ class PajGpsTrackerTest(unittest.IsolatedAsyncioTestCase):
             return
         # Test if get_devices returns a list of devices
         devices = await tracker.get_devices(token)
-        assert devices != None
+        assert devices is not None
+
 
     async def test_get_device_data(self):
         # Get Authoization token
