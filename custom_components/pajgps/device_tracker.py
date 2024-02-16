@@ -4,7 +4,7 @@ from __future__ import annotations
 import time
 from datetime import timedelta
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.core import HomeAssistant
 from homeassistant import config_entries
 from homeassistant.helpers.entity import DeviceInfo
@@ -93,6 +93,10 @@ class PajGpsBatterySensor(SensorEntity):
     @property
     def device_class(self) -> SensorDeviceClass | str | None:
         return SensorDeviceClass.BATTERY
+
+    @property
+    def state_class(self) -> SensorStateClass | str | None:
+        return SensorStateClass.MEASUREMENT
 
     @property
     def native_value (self) -> int | None:
