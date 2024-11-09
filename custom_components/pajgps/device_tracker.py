@@ -392,7 +392,7 @@ async def get_device_data(token, device_id):
     #   -H 'X-CSRF-TOKEN: '
     # Returns instance of PAJGPSTrackerData object.
 
-    _LOGGER.debug("Getting device data")
+    _LOGGER.debug(f"Getting data for device: {device_id}")
 
     url = API_URL + f"trackerdata/{device_id}/last_points"
     payload = {}
