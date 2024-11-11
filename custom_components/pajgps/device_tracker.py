@@ -15,7 +15,7 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
-API_URL = "https://connect.paj-gps.de/api/"
+API_URL = "https://connect.paj-gps.de/api/v1/"
 VERSION = "0.3.0"
 
 TOKEN = None
@@ -344,6 +344,8 @@ async def get_devices(token):
     #   -H 'X-CSRF-TOKEN: '
     # Returns dictionary of device id, name, imei, model and has_battery from response.success.
 
+    _LOGGER.debug("Getting devices")
+
     url = API_URL + "device"
     payload = {}
     headers = {
@@ -389,6 +391,8 @@ async def get_device_data(token, device_id):
     #   -H 'Authorization: Bearer TOKEN' \
     #   -H 'X-CSRF-TOKEN: '
     # Returns instance of PAJGPSTrackerData object.
+
+    _LOGGER.debug(f"Getting data for device: {device_id}")
 
     url = API_URL + f"trackerdata/{device_id}/last_points"
     payload = {}
