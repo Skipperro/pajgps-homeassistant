@@ -1,6 +1,7 @@
 """Platform for sensor integration."""
 from __future__ import annotations
 
+import asyncio
 import time
 from datetime import timedelta
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
@@ -10,16 +11,30 @@ from homeassistant import config_entries
 from homeassistant.helpers.entity import DeviceInfo
 
 from custom_components.pajgps.const import DOMAIN
+import asyncio
 import aiohttp
 import logging
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=30)
 API_URL = "https://connect.paj-gps.de/api/v1/"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 
 TOKEN = None
+TOKEN_REFRESH_LOCK = asyncio.Lock()
 LAST_TOKEN_REFRESH = None
+
+class TokenLock:
+    def __init__(self):
+        self.__lock = Lock()
+
+    def __enter__(self):
+        self.__lock.acquire()
+        return None
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__lock.release()
+        return False
 
 class LoginResponse:
     token = None
@@ -198,10 +213,7 @@ class PajGpsSensor(TrackerEntity):
         self._gps_id = gps_id
         self._token = token
         self._attr_icon = "mdi:map-marker"
-        if self.name is None:
-            self._attr_name = f"PAJ GPS {self._gps_id}"
-        else:
-            self._attr_name = self.name
+        self._attr_name = f"PAJ GPS {self._gps_id}"
         self._attr_unique_id = f'pajgps_{gps_id}'
         self._attr_extra_state_attributes = {}
 
@@ -267,16 +279,29 @@ class PajGpsSensor(TrackerEntity):
             return None
 
     async def refresh_token(self):
-        global TOKEN, LAST_TOKEN_REFRESH
+        global TOKEN, LAST_TOKEN_REFRESH, TOKEN_REFRESH_LOCK
 
-        # Refresh token once every 10 minutes
-        if LAST_TOKEN_REFRESH is None or time.time() - LAST_TOKEN_REFRESH > 600:
-            LAST_TOKEN_REFRESH = time.time()
-        else:
-            return
-        self._token = await get_login_token(self.hass.config_entries.async_entries(DOMAIN)[0].data["email"],
-                                           self.hass.config_entries.async_entries(DOMAIN)[0].data["password"])
-        TOKEN = self._token
+        async with TOKEN_REFRESH_LOCK:
+            # Refresh token once every 10 minutes
+            if (LAST_TOKEN_REFRESH is None or time.time() - LAST_TOKEN_REFRESH > 600) or TOKEN is None:
+                _LOGGER.debug("Refreshing token...")
+                try:
+                    email = self.hass.config_entries.async_entries(DOMAIN)[0].data["email"]
+                    password = self.hass.config_entries.async_entries(DOMAIN)[0].data["password"]
+
+                    # Fetch new token
+                    new_token = await get_login_token(email, password)
+                    if new_token:
+                        TOKEN = new_token
+                        LAST_TOKEN_REFRESH = time.time()
+                        _LOGGER.debug("Token refreshed successfully.")
+                    else:
+                        _LOGGER.error("Failed to refresh token.")
+                except Exception as e:
+                    _LOGGER.error(f"Error during token refresh: {e}")
+            else:
+                _LOGGER.debug("Token refresh skipped (still valid).")
+
     async def async_update(self) -> None:
         global TOKEN
         """Fetch new state data for the sensor."""
@@ -288,8 +313,6 @@ class PajGpsSensor(TrackerEntity):
                 self._last_data = tracker_data
                 # Add extra attribute with raw data as string
                 self._attr_extra_state_attributes["raw_data"] = str(tracker_data)
-            else:
-                _LOGGER.error(f"No data for PAJ GPS device {self._gps_id}")
 
         except Exception as e:
             _LOGGER.error(f'{e}')
@@ -428,31 +451,53 @@ async def async_setup_entry(
     async_add_entities,
 ):
     """Add sensors for passed config_entry in HA."""
-    # Check if email and password are set. Throw exception if not.
-    if config_entry.data["email"] == None or config_entry.data["password"] == None:
-        _LOGGER.error("Email or password not set")
+    _LOGGER.debug("Starting setup for PAJ GPS integration")
+
+    # Validate email and password
+    email = config_entry.data.get("email")
+    password = config_entry.data.get("password")
+    if not email or not password:
+        _LOGGER.error("Email or password not set in config entry")
         return
 
-    # Get Authoization token
-    token = await get_login_token(config_entry.data["email"], config_entry.data["password"])
-    if token == None:
-        _LOGGER.error("Could not get login token")
+    # Get Authorization token
+    token = await get_login_token(email, password)
+    if not token:
+        _LOGGER.error("Failed to retrieve login token")
         return
+
     # Get devices
     devices = await get_devices(token)
-    if devices == None:
-        _LOGGER.error("Could not get devices")
+    if not devices:
+        _LOGGER.error("No devices found or failed to fetch devices")
         return
-    # Add sensors
+
+    # Prepare entities for addition
     to_add = []
     for device_id, device in devices.items():
-        model = device["model"]
-        gpssensor = PajGpsSensor(device_id, device["imei"], device["model"], device["has_battery"], token)
-        to_add.append(gpssensor)
-        # Add simple battery sensor for this device that reads its value from the GPS sensor battery_level attribute
-        if device["has_battery"]:
-            to_add.append(PajGpsBatterySensor(gpssensor))
-        # Add speed sensor for this device that reads its value from the GPS sensor speed attribute
-        to_add.append(PajGpsSpeedSensor(gpssensor))
+        try:
+            gpssensor = PajGpsSensor(
+                gps_id=device["id"],
+                imei=device["imei"],
+                model=device["model"],
+                has_battery=device["has_battery"],
+                token=token,
+            )
+            to_add.append(gpssensor)
 
-    async_add_entities(to_add, update_before_add=True)
+            # Add battery sensor if applicable
+            if device["has_battery"]:
+                to_add.append(PajGpsBatterySensor(gpssensor))
+
+            # Add speed sensor
+            to_add.append(PajGpsSpeedSensor(gpssensor))
+        except Exception as e:
+            _LOGGER.error(f"Error creating entities for device {device_id}: {e}")
+            continue
+
+    # Add entities to Home Assistant
+    if to_add and async_add_entities:
+        _LOGGER.debug(f"Adding {len(to_add)} entities to Home Assistant")
+        async_add_entities(to_add, update_before_add=False)
+    else:
+        _LOGGER.warning("No entities to add for PAJ GPS integration")
